@@ -1,6 +1,7 @@
 from app.config import settings
 from app.llm.base import LLMProvider
 from app.llm.fake import FakeProvider
+from app.llm.ollama_provider import OllamaProvider
 
 
 def get_provider() -> LLMProvider:
@@ -11,5 +12,6 @@ def get_provider() -> LLMProvider:
             # TODO (Phase 1): return AnthropicProvider() from app/llm/anthropic_provider.py
             raise NotImplementedError("Anthropic provider not implemented yet")
         case "ollama":
-            # TODO (Phase 1): return OllamaProvider() from app/llm/ollama_provider.py
-            raise NotImplementedError("Ollama provider not implemented yet")
+            return OllamaProvider()
+        case _:
+            raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")
