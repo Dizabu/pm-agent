@@ -15,20 +15,23 @@ def make_provider(reply_text: str) -> AnthropicProvider:
     )
     return provider
 
+
 def test_complete_returns_text():
     provider = make_provider("Hi from Claude")
     reply = asyncio.run(provider.complete([Message(role="user", content="hi")]))
     assert reply == "Hi from Claude"
 
+
 def test_system_is_sent_separately():
     provider = make_provider("ok")
     asyncio.run(provider.complete([Message(role="user", content="hi")], system="You are a PM"))
-    sent = provider.client.messages.create.call_args.kwargs  
+    sent = provider.client.messages.create.call_args.kwargs
     assert sent["system"] == "You are a PM"
     assert sent["messages"] == [{"role": "user", "content": "hi"}]
+
 
 def test_no_system_key_when_empty():
     provider = make_provider("ok")
     asyncio.run(provider.complete([Message(role="user", content="hi")], system=""))
-    sent = provider.client.messages.create.call_args.kwargs  
+    sent = provider.client.messages.create.call_args.kwargs
     assert "system" not in sent

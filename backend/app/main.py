@@ -23,6 +23,8 @@ async def health() -> dict[str, str]:
 
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest, llm: Annotated[LLMProvider, Depends(get_provider)]) -> ChatResponse:
+async def chat(
+    req: ChatRequest, llm: Annotated[LLMProvider, Depends(get_provider)]
+) -> ChatResponse:
     reply = await llm.complete([Message(role="user", content=req.message)])
     return ChatResponse(reply=reply)

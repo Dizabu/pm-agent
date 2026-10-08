@@ -10,7 +10,7 @@ def get_provider() -> LLMProvider:
         case "fake":
             return FakeProvider()
         case "anthropic":
-            return AnthropicProvider()        
+            return AnthropicProvider()
         case "ollama":
             return OllamaProvider()
         case _:

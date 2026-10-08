@@ -6,6 +6,7 @@ from app.llm.base import Message
 
 class AnthropicProvider:
     """Calls Claude through the official Anthropic SDK."""
+
     def __init__(self) -> None:
         self.client = AsyncAnthropic(api_key=settings.anthropic_api_key)
 
@@ -20,6 +21,3 @@ class AnthropicProvider:
 
         response = await self.client.messages.create(**payload)
         return response.content[0].text
-    
-
-    

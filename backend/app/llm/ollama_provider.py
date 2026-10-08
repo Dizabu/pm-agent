@@ -11,9 +11,7 @@ class OllamaProvider:
         ollama_messages = []
         if system:
             messages = [Message(role="system", content=system)] + messages
-        ollama_messages.extend(
-            [m.to_dict() for m in messages]
-        )
+        ollama_messages.extend([m.to_dict() for m in messages])
         return ollama_messages
 
     async def complete(self, messages: list[Message], system: str = "") -> str:
@@ -33,4 +31,3 @@ class OllamaProvider:
             response.raise_for_status()
             data = response.json()
             return data["message"]["content"]
-        
