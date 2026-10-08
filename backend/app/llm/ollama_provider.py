@@ -12,7 +12,7 @@ class OllamaProvider:
         if system:
             messages = [Message(role="system", content=system)] + messages
         ollama_messages.extend(
-            [{"role": message.role, "content": message.content} for message in messages]
+            [m.to_dict() for m in messages]
         )
         return ollama_messages
 
