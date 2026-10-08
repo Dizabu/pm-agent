@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-5-5"
+    anthropic_max_tokens: int = 1024
 
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5:7b"

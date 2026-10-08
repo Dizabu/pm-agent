@@ -7,6 +7,9 @@ class Message:
     role: str  # "user" or "assistant"
     content: str
 
+    def to_dict(self) -> dict:
+        return {"role": self.role, "content": self.content}
+
 
 class LLMProvider(Protocol):
     """Every provider (Anthropic, Ollama, Fake) implements this same interface,
