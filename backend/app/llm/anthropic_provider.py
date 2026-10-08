@@ -15,7 +15,8 @@ class AnthropicProvider:
             "max_tokens": settings.anthropic_max_tokens,
             "messages": [m.to_dict() for m in messages],
         }
-       
+        if system:
+            payload["system"] = system
 
         response = await self.client.messages.create(**payload)
         return response.content[0].text
