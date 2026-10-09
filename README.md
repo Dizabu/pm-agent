@@ -1,15 +1,21 @@
 # PM Agent
 
-A small **virtual project manager** AI agent. You chat with it, and it reads and updates a project's tasks
-through **MCP tools**, streams its answers to a **React** UI over **server-sent events**, and is checked by an
-**evaluation pipeline** in CI. It works with **Claude** or a local **Ollama** model.
+[![CI](https://github.com/Dizabu/pm-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Dizabu/pm-agent/actions/workflows/ci.yml)
 
-Stack: Python 3.12 · FastAPI · Anthropic API / Ollama · MCP · SSE · React + TypeScript · pytest · GitHub Actions · Docker
+A **virtual project manager** AI agent. The goal: you chat with it, and it reads and updates a project's
+tasks through **MCP tools**, streams its answers to a **React** UI over **server-sent events**, and is
+checked by an **evaluation pipeline** in CI. It runs on **Claude** (Anthropic API) or a local **Ollama** model.
+
+> 🚧 **Work in progress.** The backend and both LLM providers work today; the tool-calling agent,
+> streaming UI and evals are being built next (see [Status](#status)).
+
+**Stack:** Python 3.12 · FastAPI · Anthropic API · Ollama · pytest · ruff · GitHub Actions
+*(planned: MCP · SSE · React + TypeScript · Docker)*
 
 ## Run it
 
 ```bash
-cp .env.example .env          # pick LLM_PROVIDER and fill in keys
+cp .env.example .env          # set LLM_PROVIDER (fake | anthropic | ollama) and keys
 cd backend
 uv sync
 uv run uvicorn app.main:app --reload    # http://localhost:8000/docs
@@ -19,69 +25,32 @@ uv run pytest                            # tests use a fake LLM: free and offlin
 ## Architecture
 
 ```
-React UI  --(POST /chat, SSE stream)-->  FastAPI backend  -->  Agent loop  -->  LLM provider (Claude | Ollama)
+React UI  --(POST /chat, SSE stream)-->  FastAPI backend  -->  Agent loop  -->  LLMProvider (Claude | Ollama | Fake)
                                                                     |
                                                                     +--> MCP client --> MCP server (task tools) --> tasks.json
 ```
 
-## Roadmap
+**Design decisions so far**
 
-Rough estimate: **25-35 hours** in total (about 2-3 weeks at 2 hours/day). Commit and push after each step.
+- **Provider abstraction:** every model sits behind one `LLMProvider` interface, chosen from config through
+  FastAPI dependency injection, so switching between Claude, Ollama or a fake model needs no code changes.
+- **Offline, deterministic tests:** a `FakeProvider` replaces the real model in tests, so CI is fast, free
+  and doesn't flake on network calls.
+- **Quality gates in CI:** every push runs ruff and pytest on GitHub Actions.
 
-### Phase 0 - Setup (done)
-- [x] FastAPI app with `/health` and `/chat`
-- [x] `LLMProvider` interface + `FakeProvider` for tests
-- [x] pytest + ruff + GitHub Actions CI
+## Status
 
-### Phase 1 - Real LLM calls (~4-5 h)
-- [ ] `app/llm/anthropic_provider.py`: implement `complete()` with the `anthropic` SDK (`AsyncAnthropic`)
-- [ ] `app/llm/ollama_provider.py`: implement `complete()` with `httpx` against Ollama's `/api/chat`
-- [ ] Wire both into `get_provider()` and try `/chat` from `/docs`
-- [ ] Add a system prompt: "You are a project manager assistant..."
-- [ ] Test: provider selection from settings (no real API calls in tests)
-
-### Phase 2 - Tools via MCP (~7-9 h), the core of the project
-- [ ] `mcp_server/`: a small MCP server (official `mcp` Python SDK, `FastMCP`) exposing
-      `list_tasks`, `create_task`, `update_task_status`, `summarize_project` over a `tasks.json` file
-- [ ] Unit tests for each tool
-- [ ] Extend `LLMProvider` with tool calling (Claude: `tools=`, Ollama: `tools` in `/api/chat`)
-- [ ] `app/agent.py`: the agent loop - send message -> model asks for a tool -> call it through the
-      MCP client -> send the result back -> repeat until the model answers
-- [ ] Limit the loop (max steps) and handle tool errors gracefully
-
-### Phase 3 - Streaming with SSE (~3-4 h)
-- [ ] `POST /chat/stream` returning `StreamingResponse` with `text/event-stream`
-- [ ] Events as JSON: `{"type": "text", ...}`, `{"type": "tool_call", ...}`, `{"type": "done"}`
-- [ ] Test the stream with `curl -N`
-
-### Phase 4 - React frontend (~6-8 h)
-- [ ] `frontend/` with Vite + React + TypeScript
-- [ ] Chat UI that reads the SSE stream (`fetch` + `ReadableStream`) and renders text as it arrives
-- [ ] Show tool calls in the chat ("Created task: Fix login bug")
-- [ ] A side panel with the current task list
-- [ ] Basic accessibility: labels, keyboard navigation, focus states
-
-### Phase 5 - Evaluation pipeline (~4-5 h)
-- [ ] `evals/cases.jsonl`: ~20 prompts with expected behavior
-      (e.g. "Add a task to write docs" -> must call `create_task`)
-- [ ] `evals/run.py`: runs each case, checks tool calls and output, prints a score and saves a report
-- [ ] Run a cheap subset in CI so a prompt change that breaks behavior fails the build
-
-### Phase 6 - Production polish (~3-4 h)
-- [ ] Structured logging (JSON logs, one request id per chat, log every tool call)
-- [ ] `Dockerfile` + `docker-compose.yml` (backend + frontend, optional Ollama)
-- [ ] Secrets only from environment variables, never in code
-- [ ] README: screenshot/GIF, architecture diagram, what you learned
-- [ ] Optional: deploy (Render/Fly.io/Azure) or a short Terraform file for the cloud setup
-
-## How this maps to the Moody's posting
-
-| They ask for | Where it is |
+| Area | State |
 |---|---|
-| Python, tested and reviewed code | backend + pytest + CI |
-| LLM services, prompt design, evaluating output | Phases 1, 2, 5 |
-| FastAPI | backend |
-| MCP tool integrations | Phase 2 |
-| SSE streaming to React | Phases 3, 4 |
-| Evaluation pipelines that catch regressions | Phase 5 |
-| CI/CD, logging, containers, IaC | Phase 6 |
+| FastAPI app (`/health`, `/chat`), config from environment | ✅ Done |
+| `LLMProvider` interface, `FakeProvider`, pytest + ruff + CI | ✅ Done |
+| Claude provider (`AsyncAnthropic`) and Ollama provider (`httpx`) | ✅ Done |
+| MCP server with task tools (`list_tasks`, `create_task`, `update_task_status`, `summarize_project`) and the agent loop | 🚧 In progress |
+| `POST /chat/stream` with server-sent events | Planned |
+| React + TypeScript chat UI with a live task panel | Planned |
+| Evaluation pipeline (`evals/cases.jsonl`, scored in CI) | Planned |
+| Structured logging, Docker / docker-compose | Planned |
+
+## Author
+
+**Diego Zamora Bustos**: [GitHub](https://github.com/Dizabu) · [LinkedIn](https://www.linkedin.com/in/diego-zamora-a91b53429)
