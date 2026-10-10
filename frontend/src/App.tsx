@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react"
+
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import { TaskPanel, type Task } from "./TaskPanel"
 import "./App.css"
 
@@ -22,25 +23,30 @@ export default function App() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
+  const bottomRef = useRef<HTMLDivElement>(null)
 
-  // The WHAT: how to load the tasks from the backend.
+
   async function loadTasks() {
     const response = await fetch("/tasks")
     setTasks(await response.json())
   }
 
-  // The WHEN: load them once, when the page first opens ([] = no dependencies).
   useEffect(() => {
     loadTasks()
   }, [])
+
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])                                   
 
   function addMessage(from: ChatMessage["from"], text: string) {
     setMessages((prev) => [...prev, { from, text }])
   }
 
   function send(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()                      // stop the browser from reloading the page
-    if (!input.trim()) return                   // ignore empty messages
+    event.preventDefault()                      
+    if (!input.trim()) return                   
 
     setMessages((prev) => [...prev, { from: "user", text: input }])
     setInput("") // clear the text box
@@ -53,34 +59,40 @@ export default function App() {
     else if (event.type === "text" || event.type === "error") addMessage("agent", event.text)
     else if (event.type === "done") {
       setLoading(false)
-      loadTasks() // the agent may have changed tasks, so refresh the panel
+      loadTasks() 
     }
   }
 
   async function askAgent(text: string) {
     setLoading(true)
-    const response = await fetch("/agent/stream", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text }),
-    })
+    try {
+      const response = await fetch("/agent/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      })
+      if (!response.ok) throw new Error(`Server error ${response.status}`)
 
-    const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader()
-    let buffer = ""
+      const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader()
+      let buffer = ""
 
-    while (true) {
-      const { value, done } = await reader.read()      
-      if (done) break                                    
-      buffer += value
-      const parts = buffer.split("\n\n")                 
-      buffer = parts.pop() ?? ""                        
-      for (const part of parts) {
-        if (part.startsWith("data: ")) {
-          handleEvent(JSON.parse(part.slice("data: ".length)))
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer += value
+        const parts = buffer.split("\n\n")
+        buffer = parts.pop() ?? ""
+        for (const part of parts) {
+          if (part.startsWith("data: ")) {
+            handleEvent(JSON.parse(part.slice("data: ".length)))
+          }
         }
       }
+    } catch {
+      addMessage("agent", "Sorry, I encountered an error while processing your request.")
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
@@ -95,6 +107,8 @@ export default function App() {
           </li>
         ))}
       </ul>
+      <div ref={bottomRef} />
+
 
       <form onSubmit={send}>
         <input
