@@ -3,7 +3,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 from app.llm.anthropic_provider import AnthropicProvider
-
 from app.llm.base import Message, ToolCall, ToolSpec
 
 
