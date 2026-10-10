@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.agent import Agent
@@ -45,3 +47,17 @@ def get_agent(llm: Annotated[LLMProvider, Depends(get_provider)]) -> Agent:
 async def agent(req: ChatRequest, agent: Annotated[Agent, Depends(get_agent)]) -> ChatResponse:
     reply = await agent.run(req.message)
     return ChatResponse(reply=reply)
+
+
+@app.post("/agent/stream")
+async def agent_stream(
+    req: ChatRequest, agent: Annotated[Agent, Depends(get_agent)]
+) -> StreamingResponse:
+    async def sse():
+        async for event in agent.run_events(req.message):
+            yield f"data: {json.dumps(event)}\n\n"
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+    return StreamingResponse(
+        sse(), media_type="text/event-stream"
+    )  # TODO 3: the content type for SSE
