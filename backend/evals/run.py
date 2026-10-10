@@ -23,11 +23,13 @@ async def run_case(case: dict) -> list[str]:
     """Run the agent on one case, in a throwaway task store, and grade it."""
     with tempfile.TemporaryDirectory() as tmp:
         store = TaskStore(Path(tmp) / "tasks.json")
-        store._save([Task(i, t["title"], t["status"]) for i, t in enumerate(case["tasks"])])     # TODO 1: build each starting Task
+        store._save(
+            [Task(i, t["title"], t["status"]) for i, t in enumerate(case["tasks"], start=1)]
+        )
         agent = Agent(get_provider(), create_server(store))
         try:
             events = [event async for event in agent.run_events(case["message"])]
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - one crashing case must not stop the whole eval run
             return [f"crashed: {e!r}"]
         return check_case(case, events, store.list_tasks())
 
@@ -46,7 +48,9 @@ async def main() -> None:
             passed += 1
             print(f"✅ {case['id']}")
 
-    print(f"Score: {passed}/{len(cases)} ({passed/len(cases)*100:.0f}%)")       # TODO 2: e.g. "Score: 6/8 (75%)"
+    print(
+        f"Score: {passed}/{len(cases)} ({passed / len(cases) * 100:.0f}%)"
+    )  # TODO 2: e.g. "Score: 6/8 (75%)"
 
 
 if __name__ == "__main__":
