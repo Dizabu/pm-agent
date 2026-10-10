@@ -1,0 +1,44 @@
+.chat {
+  max-width: 640px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  font-family: system-ui, sans-serif;
+}
+
+.messages {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.messages li {
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  max-width: 80%;
+  white-space: pre-wrap;
+}
+
+.messages .user {
+  align-self: flex-end;
+  background: #2563eb;
+  color: white;
+}
+
+.messages .agent {
+  align-self: flex-start;
+  background: #e5e7eb;
+  color: #111827;
+}
+
+form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+form input {
+  flex: 1;
+  padding: 0.6rem;
+  font-size: 1rem;
+}
