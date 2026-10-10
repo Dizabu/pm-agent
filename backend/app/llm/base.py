@@ -17,6 +17,13 @@ class ToolSpec:
     description: str
     input_schema: dict
 
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "input_schema": self.input_schema,
+        }
+
 
 @dataclass
 class ToolCall:

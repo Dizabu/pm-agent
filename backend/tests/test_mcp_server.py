@@ -21,7 +21,7 @@ def test_exposes_the_three_task_tools(tmp_path):
         "list_tasks",
         "create_task",
         "update_task_status",
-    }  # TODO 1: the set of the 3 tool names
+    }
 
 
 def test_update_tool_tells_the_llm_the_valid_statuses(tmp_path):
@@ -39,12 +39,11 @@ def test_create_task_through_mcp_saves_it(tmp_path):
         "id": 1,
         "title": "Write README",
         "status": "todo",
-    }  # TODO 3: the exact dict you expect
-    assert len(store.list_tasks()) == 1  # TODO 4: did it really reach the store?
+    }
+    assert len(store.list_tasks()) == 1
 
 
 def test_unknown_task_raises_tool_error(tmp_path):
-    # TODO 5: call "update_task_status" with task_id 99 and check it raises ToolError
     server, _ = make_server(tmp_path)
     with pytest.raises(ToolError, match="No task with id 99"):
         asyncio.run(server.call_tool("update_task_status", {"task_id": 99, "status": "done"}))
