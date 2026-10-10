@@ -23,8 +23,6 @@ async def run_tool(server: MCPServer, call: ToolCall) -> str:
     return json.dumps(result.structured_content)
 
 
-from app.llm.base import ToolCall, ToolSpec
-
 SYSTEM_PROMPT = (
     "You are a project manager assistant. Use the tools to read and change the project's tasks. "
     "If you don't know a task's id, call list_tasks first. "
