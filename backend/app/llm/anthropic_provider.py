@@ -6,6 +6,7 @@ from app.llm.base import LLMResponse, Message, ToolCall, ToolSpec
 
 class AnthropicProvider:
     """Calls Claude through the official Anthropic SDK."""
+
     def __init__(self) -> None:
         self.client = AsyncAnthropic(api_key=settings.anthropic_api_key)
 
