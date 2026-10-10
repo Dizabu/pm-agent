@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 from app.llm.anthropic_provider import AnthropicProvider
+
 from app.llm.base import Message, ToolCall, ToolSpec
 
 
@@ -71,7 +72,7 @@ def test_chat_separates_text_and_tool_calls():
     response = asyncio.run(
         provider.chat([Message(role="user", content="add a task")], tools=[CREATE_TASK])
     )
-    assert response.text == "Sure, I'll create it."  # TODO B
+    assert response.text == "Sure, I'll create it."
     assert response.tool_calls == [
         ToolCall(id="toolu_01", name="create_task", arguments={"title": "Write README"})
-    ]  # TODO C: the exact ToolCall
+    ]
