@@ -1,5 +1,6 @@
 import json
 import logging
+from collections.abc import AsyncIterator
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
@@ -65,3 +66,27 @@ class Agent:
             messages.append(Message(role="user", content="Tool results:\n" + "\n".join(results)))
 
         return "Sorry, I couldn't finish that within the step limit."
+
+    async def run_events(self, user_message: str) -> AsyncIterator[dict]:
+        """Run the agent, yielding an event dict at each step instead of only returning the answer."""
+        tools = await get_tool_specs(self.server)
+        messages = [Message(role="user", content=user_message)]
+
+        for _ in range(self.max_steps):
+            response = await self.llm.chat(messages, system=SYSTEM_PROMPT, tools=tools)
+
+            if not response.tool_calls:
+                yield {"type": "text", "text": response.text}
+                return  # a bare return ENDS the generator
+
+            messages.append(Message(role="assistant", content=describe_calls(response.tool_calls)))
+            results = []
+            for call in response.tool_calls:
+                yield {"type": "tool_call", "name": call.name, "arguments": call.arguments}
+                result = await run_tool(self.server, call)
+                logger.warning("tool %s(%s) -> %s", call.name, call.arguments, result)
+                yield {"type": "tool_result", "name": call.name, "result": result}
+                results.append(f"{call.name} → {result}")
+            messages.append(Message(role="user", content="Tool results:\n" + "\n".join(results)))
+
+        yield {"type": "error", "text": "Sorry, I couldn't finish that within the step limit."}
