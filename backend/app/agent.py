@@ -1,9 +1,12 @@
 import json
+import logging
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 from app.llm.base import LLMProvider, Message, ToolCall, ToolSpec
+
+logger = logging.getLogger("agent")
 
 
 async def get_tool_specs(server: MCPServer) -> list[ToolSpec]:
@@ -24,9 +27,9 @@ async def run_tool(server: MCPServer, call: ToolCall) -> str:
 
 
 SYSTEM_PROMPT = (
-    "You are a project manager assistant. Use the tools to read and change the project's tasks. "
-    "If you don't know a task's id, call list_tasks first. "
-    "When you are done, answer the user briefly."
+    "You are a project manager assistant. You do NOT know the tasks or their ids in advance. "
+    "Before updating a task, you MUST call list_tasks and find the id of the task whose title matches the request. "
+    "Never guess an id. Only report success after the tool result confirms it. Answer briefly."
 )
 
 
@@ -54,9 +57,11 @@ class Agent:
                 return response.text
 
             messages.append(Message(role="assistant", content=describe_calls(response.tool_calls)))
-            results = [
-                f"{call.name} → {await run_tool(self.server, call)}" for call in response.tool_calls
-            ]  # TODO 3
+            results = []
+            for call in response.tool_calls:
+                result = await run_tool(self.server, call)
+                logger.warning("tool %s(%s) -> %s", call.name, call.arguments, result)
+                results.append(f"{call.name} → {result}")
             messages.append(Message(role="user", content="Tool results:\n" + "\n".join(results)))
 
         return "Sorry, I couldn't finish that within the step limit."
