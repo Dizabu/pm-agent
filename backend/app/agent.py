@@ -64,7 +64,7 @@ class Agent:
 
             if not response.tool_calls:
                 yield {"type": "text", "text": response.text}
-                return  # a bare return ENDS the generator
+                return
 
             messages.append(Message(role="assistant", content=describe_calls(response.tool_calls)))
             results = []

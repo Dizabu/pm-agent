@@ -1,0 +1,78 @@
+.chat {
+  max-width: 640px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  font-family: system-ui, sans-serif;
+}
+
+.messages {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.messages li {
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  max-width: 80%;
+  white-space: pre-wrap;
+}
+
+.messages .user {
+  align-self: flex-end;
+  background: #2563eb;
+  color: white;
+}
+
+.messages .agent {
+  align-self: flex-start;
+  background: #e5e7eb;
+  color: #111827;
+}
+
+form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+form input {
+  flex: 1;
+  padding: 0.6rem;
+  font-size: 1rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 2rem;
+  max-width: 980px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.layout .chat {
+  margin: 0;
+  max-width: none;
+}
+
+.tasks {
+  border-left: 1px solid #e5e7eb;
+  padding-left: 1.5rem;
+  font-family: system-ui, sans-serif;
+}
+
+.tasks ul {
+  list-style: none;
+  padding: 0;
+}
+
+.tasks li {
+  padding: 0.3rem 0;
+}
+
+.tasks li.done {
+  color: #6b7280;
+  text-decoration: line-through;
+}
