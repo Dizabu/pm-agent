@@ -47,7 +47,6 @@ def test_update_with_invalid_status_raises(tmp_path):
     task = store.create_task("Write README")
     with pytest.raises(ValueError):
         store.update_task_status(task.id, "invalid_status")
-    
 
 
 def test_new_id_does_not_reuse_existing_ids(tmp_path):
@@ -55,4 +54,3 @@ def test_new_id_does_not_reuse_existing_ids(tmp_path):
     store._save([Task(id=1, title="Task 1"), Task(id=3, title="Task 3")])
     new_task = store.create_task("Task 4")
     assert new_task.id == 4
-
