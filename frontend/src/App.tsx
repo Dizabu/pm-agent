@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
+import { TaskPanel, type Task } from "./TaskPanel"
 import "./App.css"
 
 type ChatMessage = {
@@ -20,6 +21,18 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
+  const [tasks, setTasks] = useState<Task[]>([])
+
+  // The WHAT: how to load the tasks from the backend.
+  async function loadTasks() {
+    const response = await fetch("/tasks")
+    setTasks(await response.json())
+  }
+
+  // The WHEN: load them once, when the page first opens ([] = no dependencies).
+  useEffect(() => {
+    loadTasks()
+  }, [])
 
   function addMessage(from: ChatMessage["from"], text: string) {
     setMessages((prev) => [...prev, { from, text }])
@@ -30,15 +43,18 @@ export default function App() {
     if (!input.trim()) return                   // ignore empty messages
 
     setMessages((prev) => [...prev, { from: "user", text: input }])
-    setInput("")     
-    askAgent(input)                           // clear the text box
+    setInput("") // clear the text box
+    askAgent(input)
   }
 
   function handleEvent(event: AgentEvent) {
     if (event.type === "tool_call") addMessage("agent", `🔧 Calling ${event.name}...`)
     else if (event.type === "tool_result") addMessage("agent", `✅ ${event.name} finished`)
     else if (event.type === "text" || event.type === "error") addMessage("agent", event.text)
-    else if (event.type === "done") setLoading(false)
+    else if (event.type === "done") {
+      setLoading(false)
+      loadTasks() // the agent may have changed tasks, so refresh the panel
+    }
   }
 
   async function askAgent(text: string) {
@@ -53,11 +69,11 @@ export default function App() {
     let buffer = ""
 
     while (true) {
-      const { value, done } = await reader.read()       // wait for the next chunk
-      if (done) break                                    // the server closed the stream
+      const { value, done } = await reader.read()      
+      if (done) break                                    
       buffer += value
-      const parts = buffer.split("\n\n")                 // complete messages...
-      buffer = parts.pop() ?? ""                         // ...except the last piece, which may be incomplete
+      const parts = buffer.split("\n\n")                 
+      buffer = parts.pop() ?? ""                        
       for (const part of parts) {
         if (part.startsWith("data: ")) {
           handleEvent(JSON.parse(part.slice("data: ".length)))
@@ -68,7 +84,8 @@ export default function App() {
   }
 
   return (
-    <main className="chat">
+    <div className="layout">
+      <main className="chat">
       <h1>PM Agent</h1>
 
       <ul className="messages">
@@ -90,6 +107,9 @@ export default function App() {
           {loading ? "Thinking..." : "Send"}
         </button>
       </form>
-    </main>
+      </main>
+
+      <TaskPanel tasks={tasks} />
+    </div>
   )
 }

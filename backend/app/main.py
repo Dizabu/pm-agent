@@ -1,4 +1,5 @@
 import json
+from dataclasses import asdict
 from pathlib import Path
 from typing import Annotated
 
@@ -37,9 +38,15 @@ async def chat(
     return ChatResponse(reply=reply)
 
 
-def get_agent(llm: Annotated[LLMProvider, Depends(get_provider)]) -> Agent:
-    """Build an agent with the configured LLM and the real tasks file."""
-    store = TaskStore(Path(settings.tasks_file))
+def get_store() -> TaskStore:
+    """The real task store, from the configured file."""
+    return TaskStore(Path(settings.tasks_file))
+
+
+def get_agent(
+    llm: Annotated[LLMProvider, Depends(get_provider)],
+    store: Annotated[TaskStore, Depends(get_store)],
+) -> Agent:
     return Agent(llm, create_server(store))
 
 
@@ -58,6 +65,9 @@ async def agent_stream(
             yield f"data: {json.dumps(event)}\n\n"
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
-    return StreamingResponse(
-        sse(), media_type="text/event-stream"
-    )  # TODO 3: the content type for SSE
+    return StreamingResponse(sse(), media_type="text/event-stream")
+
+
+@app.get("/tasks")
+async def list_tasks(store: Annotated[TaskStore, Depends(get_store)]) -> list[dict]:
+    return [asdict(t) for t in store.list_tasks()]
