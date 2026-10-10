@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 from app.agent import Agent
@@ -39,3 +41,23 @@ def test_agent_endpoint_runs_the_agent(tmp_path):
     assert res.status_code == 200
     assert res.json() == {"reply": "Created it!"}
     assert len(store.list_tasks()) == 1
+
+
+def test_agent_stream_sends_sse_events(tmp_path):
+    store = TaskStore(tmp_path / "tasks.json")
+    llm = ScriptedLLM(
+        LLMResponse(
+            tool_calls=[ToolCall(id="1", name="create_task", arguments={"title": "Write README"})]
+        ),
+        LLMResponse(text="Created it!"),
+    )
+    app.dependency_overrides[get_agent] = lambda: Agent(llm, create_server(store))
+
+    res = client.post("/agent/stream", json={"message": "Create a task"})
+
+    app.dependency_overrides.pop(get_agent)
+    assert res.headers["content-type"].startswith("text/event-stream")  # TODO 4
+
+    lines = [line for line in res.text.split("\n\n") if line]
+    events = [json.loads(line.removeprefix("data: ")) for line in lines]
+    assert [e["type"] for e in events] == ["tool_call", "tool_result", "text", "done"]

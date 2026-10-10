@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 from app.agent import Agent, get_tool_specs, run_tool
 from app.llm.base import LLMResponse, ToolCall
@@ -63,9 +64,6 @@ def test_runs_a_tool_then_answers(tmp_path):
 
 
 def test_stops_after_max_steps(tmp_path):
-    # TODO 7: a ScriptedLLM that ALWAYS asks for list_tasks (give it 3 tool-call responses),
-    #         an Agent with max_steps=3 → the answer must contain "step limit"
-    #         and the LLM must have been called exactly 3 times
     llm = ScriptedLLM(
         LLMResponse(tool_calls=[ToolCall(id="1", name="list_tasks", arguments={})]),
         LLMResponse(tool_calls=[ToolCall(id="2", name="list_tasks", arguments={})]),
@@ -76,3 +74,24 @@ def test_stops_after_max_steps(tmp_path):
     )
     assert "step limit" in answer
     assert len(llm.calls) == 3
+
+
+async def collect(agent: Agent, message: str) -> list[dict]:
+    """Run the agent and gather all its events into a list."""
+    return [event async for event in agent.run_events(message)]
+
+
+def test_run_events_reports_each_step(tmp_path):
+    llm = ScriptedLLM(
+        LLMResponse(
+            tool_calls=[ToolCall(id="1", name="create_task", arguments={"title": "Write README"})]
+        ),
+        LLMResponse(text="Done!"),
+    )
+    events = asyncio.run(collect(Agent(llm, make_server(tmp_path)), "Create a task"))
+
+    assert [e["type"] for e in events] == ["tool_call", "tool_result", "text"]
+    assert events[0]["name"] == "create_task"
+    assert events[1]["name"] == "create_task"
+    assert events[-1]["text"] == "Done!"
+    json.dumps(events)  # every event must be JSON-safe, because it is sent to the browser
