@@ -1,4 +1,5 @@
 import json
+import logging
 from dataclasses import asdict
 from pathlib import Path
 from typing import Annotated
@@ -13,12 +14,8 @@ from app.llm import get_provider
 from app.llm.base import LLMProvider, Message
 from app.mcp_server import create_server
 from app.task import TaskStore
-import logging
-
 
 app = FastAPI(title="PM Agent")
-
-
 
 
 logging.basicConfig(
