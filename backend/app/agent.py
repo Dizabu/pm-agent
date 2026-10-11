@@ -76,4 +76,5 @@ class Agent:
                 results.append(f"{call.name} → {result}")
             messages.append(Message(role="user", content="Tool results:\n" + "\n".join(results)))
 
+        logger.warning("step limit (%s) reached for message: %r", self.max_steps, user_message)
         yield {"type": "error", "text": "Sorry, I couldn't finish that within the step limit."}

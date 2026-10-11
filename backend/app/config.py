@@ -17,5 +17,7 @@ class Settings(BaseSettings):
 
     tasks_file: str = "tasks.json"
 
+    log_level: str = "INFO"
+
 
 settings = Settings()
