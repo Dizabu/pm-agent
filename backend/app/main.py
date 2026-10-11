@@ -13,8 +13,18 @@ from app.llm import get_provider
 from app.llm.base import LLMProvider, Message
 from app.mcp_server import create_server
 from app.task import TaskStore
+import logging
+
 
 app = FastAPI(title="PM Agent")
+
+
+
+
+logging.basicConfig(
+    level=settings.log_level,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 
 class ChatRequest(BaseModel):
