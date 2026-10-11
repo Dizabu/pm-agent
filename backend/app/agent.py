@@ -71,7 +71,7 @@ class Agent:
             for call in response.tool_calls:
                 yield {"type": "tool_call", "name": call.name, "arguments": call.arguments}
                 result = await run_tool(self.server, call)
-                logger.warning("tool %s(%s) -> %s", call.name, call.arguments, result)
+                logger.info("tool %s(%s) -> %s", call.name, call.arguments, result)
                 yield {"type": "tool_result", "name": call.name, "result": result}
                 results.append(f"{call.name} → {result}")
             messages.append(Message(role="user", content="Tool results:\n" + "\n".join(results)))
